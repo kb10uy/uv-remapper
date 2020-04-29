@@ -1,6 +1,7 @@
 [package]
 name = "uv-remapper"
 version = "0.1.0"
+description = "CLI tool for remapping images onto another"
 authors = ["kb10uy <kb10uy@kb10uy.org>"]
 edition = "2018"
 

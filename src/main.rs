@@ -4,12 +4,12 @@ mod scripting;
 use crate::remapper::Remapper;
 use std::{error::Error, fs::File, io::BufReader};
 
-use rlua::prelude::*;
 use clap::Clap;
 use log::{error, info};
+use rlua::prelude::*;
 
 #[derive(Clap)]
-#[clap(name = env!("CARGO_PKG_NAME"), version = env!("CARGO_PKG_VERSION"))]
+#[clap(name = "UV Remapper", version, author, about)]
 struct Arguments {
     /// 実行する Lua スクリプトのパス
     script: String,
