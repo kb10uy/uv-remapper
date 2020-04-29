@@ -111,8 +111,8 @@ impl Remapper {
         if let Some(lattice) = command.lattice {
             let patching_image =
                 ImageBuffer::from_fn(scaled.width as u32, scaled.height as u32, |x, y| {
-                    let inner_u = x as f32 / scaled.width;
-                    let inner_v = y as f32 / scaled.height;
+                    let inner_u = (x as f32 + 0.5) / scaled.width;
+                    let inner_v = (y as f32 + 0.5) / scaled.height;
                     let warped_uv = lattice.warp_bilinear((inner_u, inner_v).into());
                     let source_x = (warped_uv.x * scaled.width) as u32;
                     let source_y = (warped_uv.y * scaled.height) as u32;

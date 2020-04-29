@@ -59,8 +59,16 @@ impl Lattice {
     /// バイリニア補完。
     pub fn warp_bilinear(&self, uv: Vec2) -> Vec2 {
         // [0, x/y_blocks] に持ってくる
-        let ranged_u = (uv.x - uv.x.floor()) * self.x_blocks as f32;
-        let ranged_v = (uv.y - uv.y.floor()) * self.y_blocks as f32;
+        let ranged_u = if uv.x == 1.0 {
+            1.0
+        } else {
+            uv.x - uv.x.floor()
+        } * self.x_blocks as f32;
+        let ranged_v = if uv.y == 1.0 {
+            1.0
+        } else {
+            uv.y - uv.y.floor()
+        } * self.y_blocks as f32;
 
         let left_index = ranged_u as usize;
         let top_index = ranged_v as usize;
@@ -85,7 +93,8 @@ impl Lattice {
 
     /// 指定インデックスのラティスの値を取得する。
     fn lattice_at(&self, x: usize, y: usize) -> Vec2 {
-        self.uvs[y * (self.x_blocks + 1) + x]
+        // self.uvs[y * (self.x_blocks + 1) + x]
+        self.uvs[y.min(self.y_blocks) * (self.x_blocks + 1) + x.min(self.x_blocks)]
     }
 }
 
