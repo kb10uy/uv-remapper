@@ -4,8 +4,8 @@ use std::{
     sync::Arc,
 };
 
-use ultraviolet::{Vec2, Mat2};
 use rlua::prelude::*;
+use ultraviolet::{Mat2, Vec2};
 
 /// `Lattice` 関連のエラー
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -25,6 +25,7 @@ impl Display for LatticeError {
 impl Error for LatticeError {}
 
 /// 画像を UV 変形するラティス
+#[derive(Debug, Clone)]
 pub struct Lattice {
     /// X 方向の分割ブロック数(ラティス要素数 - 1)
     x_blocks: usize,
@@ -58,16 +59,8 @@ impl Lattice {
     /// バイリニア補完。
     pub fn warp_bilinear(&self, uv: Vec2) -> Vec2 {
         // [0, x/y_blocks] に持ってくる
-        let ranged_u = if uv.x == 1.0 {
-            uv.x
-        } else {
-            uv.x - uv.x.floor()
-        } * self.x_blocks as f32;
-        let ranged_v = if uv.y == 1.0 {
-            uv.y
-        } else {
-            uv.y - uv.y.floor()
-        } * self.y_blocks as f32;
+        let ranged_u = (uv.x - uv.x.floor()) * self.x_blocks as f32;
+        let ranged_v = (uv.y - uv.y.floor()) * self.y_blocks as f32;
 
         let left_index = ranged_u as usize;
         let top_index = ranged_v as usize;
@@ -87,7 +80,7 @@ impl Lattice {
         let warped_u = x_ratio.dot(u_matrix * y_ratio);
         let warped_v = x_ratio.dot(v_matrix * y_ratio);
 
-        (warped_u, warped_v).into()
+        (warped_u - warped_u.floor(), warped_v - warped_v.floor()).into()
     }
 
     /// 指定インデックスのラティスの値を取得する。
@@ -112,7 +105,7 @@ impl<'lua> ToLua<'lua> for &Lattice {
 }
 
 impl<'lua> FromLua<'lua> for Lattice {
-    fn from_lua(value: LuaValue, ctx: LuaContext) -> Result<Lattice, LuaError> {
+    fn from_lua(value: LuaValue, _: LuaContext) -> Result<Lattice, LuaError> {
         let lattice_table = match value {
             LuaValue::Table(t) => t,
             _ => {
@@ -164,5 +157,3 @@ impl<'lua> FromLua<'lua> for Lattice {
         })
     }
 }
-
-impl LuaUserData for Lattice {}

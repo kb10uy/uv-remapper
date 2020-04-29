@@ -25,6 +25,10 @@ impl Remapper {
         }
     }
 
+    pub fn base_image(&self) -> &RgbaImage {
+        &self.base_image
+    }
+
     /// リマップを行う。
     pub fn patch(&mut self, command: RemapCommand) {
         let scaled = command.range.to_scaled(
@@ -41,21 +45,32 @@ impl Remapper {
         });
 
         if let Some(lattice) = command.lattice {
-            let patching_image = ImageBuffer::from_fn(scaled.width as u32, scaled.height as u32, |x, y| {
-                let inner_u = x as f32 / scaled.width;
-                let inner_v = y as f32 / scaled.height;
-                let warped_uv = lattice.warp_bilinear((inner_u, inner_v).into());
-                let source_pixel = image.get_pixel(
-                    (warped_uv.x * scaled.width) as u32,
-                    (warped_uv.y * scaled.height) as u32,
-                );
+            let patching_image =
+                ImageBuffer::from_fn(scaled.width as u32, scaled.height as u32, |x, y| {
+                    let inner_u = x as f32 / scaled.width;
+                    let inner_v = y as f32 / scaled.height;
+                    let warped_uv = lattice.warp_bilinear((inner_u, inner_v).into());
+                    let source_pixel = image.get_pixel(
+                        (warped_uv.x * scaled.width) as u32,
+                        (warped_uv.y * scaled.height) as u32,
+                    );
 
-                // TODO: ここに mask を挿入
-                source_pixel.clone()
-            });
-            image::imageops::replace(&mut self.base_image, &patching_image, scaled.x as u32, scaled.y as u32);
+                    // TODO: ここに mask を挿入
+                    source_pixel.clone()
+                });
+            image::imageops::replace(
+                &mut self.base_image,
+                &patching_image,
+                scaled.x as u32,
+                scaled.y as u32,
+            );
         } else {
-            image::imageops::replace(&mut self.base_image, &image, scaled.x as u32, scaled.y as u32);
+            image::imageops::replace(
+                &mut self.base_image,
+                &image,
+                scaled.x as u32,
+                scaled.y as u32,
+            );
         };
     }
 }
