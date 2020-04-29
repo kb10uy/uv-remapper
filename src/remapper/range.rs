@@ -79,7 +79,7 @@ impl<'lua> FromLua<'lua> for Range<Normalized> {
                 return Err(LuaError::FromLuaConversionError {
                     from: "Non-table",
                     to: "Range",
-                    message: Some("Non-table value cannot be converted into Range".into()),
+                    message: Some("非テーブル値は Range に変換できません".into()),
                 })
             }
         };

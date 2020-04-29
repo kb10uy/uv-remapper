@@ -16,6 +16,12 @@ version = "0.23"
 [dependencies.ultraviolet]
 version = "0.4"
 
+[dependencies.log]
+version = "0.4"
+
+[dependencies.pretty_env_logger]
+version = "0.4"
+
 [dependencies.clap]
 git = "https://github.com/clap-rs/clap/"
 

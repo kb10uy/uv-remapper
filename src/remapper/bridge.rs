@@ -49,6 +49,32 @@ impl LuaUserData for Environment {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct SourceLoader {
+    queue: Vec<(String, String)>,
+}
+
+impl SourceLoader {
+    pub fn new() -> SourceLoader {
+        SourceLoader { queue: vec![] }
+    }
+
+    pub fn entries(self) -> impl Iterator<Item = (String, String)> {
+        self.queue.into_iter()
+    }
+}
+
+impl LuaUserData for SourceLoader {
+    fn add_methods<'lua, T: LuaUserDataMethods<'lua, SourceLoader>>(methods: &mut T) {
+        // loader:load(key, filename)
+        // 指定した画像ファイルの読み込みを予約する
+        methods.add_method_mut("load", |_, this, (key, file)| {
+            this.queue.push((key, file));
+            Ok(())
+        });
+    }
+}
+
 /// Lua スクリプトから予約されたパッチの情報
 #[derive(Debug, Clone)]
 pub struct RemapCommand {
@@ -77,7 +103,7 @@ impl RemapQueue {
 }
 
 impl LuaUserData for RemapQueue {
-    fn add_methods<'lua, T: LuaUserDataMethods<'lua, Self>>(methods: &mut T) {
+    fn add_methods<'lua, T: LuaUserDataMethods<'lua, RemapQueue>>(methods: &mut T) {
         // queue:push(source, range, mask, lattice)
         // キューに登録する
         methods.add_method_mut("push", |_, this, (source, range, mask, lattice)| {

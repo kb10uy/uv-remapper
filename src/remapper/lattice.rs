@@ -17,7 +17,7 @@ pub enum LatticeError {
 impl Display for LatticeError {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
-            LatticeError::NonRectangular => write!(f, "The source was not recutangular form."),
+            LatticeError::NonRectangular => write!(f, "生成元が長方形ではありません"),
         }
     }
 }
@@ -112,7 +112,7 @@ impl<'lua> FromLua<'lua> for Lattice {
                 return Err(LuaError::FromLuaConversionError {
                     from: "Non-table",
                     to: "Lattice",
-                    message: Some("Non-table value cannot be converted into Lattice".into()),
+                    message: Some("非テーブル値は Lattice に変換できません".into()),
                 })
             }
         };

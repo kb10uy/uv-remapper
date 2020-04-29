@@ -1,4 +1,5 @@
 function Initialize(loader)
+  return loader;
 end
 
 function Run(queue)
@@ -11,6 +12,6 @@ function Run(queue)
     end
   end
 
-  queue:push("default", range, nil, lattice);
+  queue:push("default_uv", range, nil, lattice);
   return queue;
 end

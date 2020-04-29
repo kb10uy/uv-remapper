@@ -2,40 +2,43 @@ mod remapper;
 mod scripting;
 
 use crate::remapper::Remapper;
-use std::{error::Error, fs::File, io::BufReader, path::PathBuf};
+use std::{error::Error, fs::File, io::BufReader};
 
+use rlua::prelude::*;
 use clap::Clap;
-use colored::Colorize;
+use log::{error, info};
 
 #[derive(Clap)]
 #[clap(name = env!("CARGO_PKG_NAME"), version = env!("CARGO_PKG_VERSION"))]
 struct Arguments {
     /// 実行する Lua スクリプトのパス
-    script: PathBuf,
+    script: String,
 
     /// 出力先画像ファイルのパス
-    output: PathBuf,
+    output: String,
 
     /// 出力画像のサイズ (デフォルト: 1024)
     #[clap(short = "s", long = "size")]
     size: Option<usize>,
 
-    /// ベース画像
+    /// ベース画像のパス。 --size は無視される
     #[clap(short = "b", long = "base")]
-    base_image: Option<PathBuf>,
+    base_image: Option<String>,
 }
 
 fn main() {
+    pretty_env_logger::init();
+
     // Termination trait 安定化までのワークアラウンド
     let termination = run();
     match termination {
         Ok(()) => (),
         Err(e) => {
-            eprintln!("{} {}", "Error:".red().bold(), e);
+            error!("{}", e);
 
             let mut source = e.source();
             while let Some(e) = source {
-                eprintln!("    -> {}", e);
+                error!("-> {}", e);
                 source = e.source();
             }
         }
@@ -44,24 +47,44 @@ fn main() {
 
 fn run() -> Result<(), Box<dyn Error>> {
     let arguments = Arguments::parse();
-    let texture_size = arguments.size.unwrap_or(1024);
-    let file = BufReader::new(File::open(&arguments.script)?);
+    let mut remapper = match arguments.base_image {
+        Some(path) => {
+            let image = image::open(&path)?;
+            info!("Loaded '{}' as base image", path);
+            Remapper::from_image(image)
+        }
+        None => {
+            let texture_size = arguments.size.unwrap_or(1024);
+            info!(
+                "Set empty image ({}x{}) as base image",
+                texture_size, texture_size
+            );
+            Remapper::new(texture_size, texture_size)
+        }
+    };
 
-    let filename = arguments
-        .script
-        .file_name()
-        .unwrap_or_default()
-        .to_str()
-        .unwrap_or_default();
+    let lua = Lua::new();
+    let script_reader = BufReader::new(File::open(&arguments.script)?);
+    scripting::prepare(&lua, &arguments.script, script_reader)?;
+    info!("Loaded '{}' as manipulation script", arguments.script);
 
-    let mut remapper = Remapper::new(texture_size, texture_size);
-    let queue = scripting::execute_script(filename, file)?;
-
-    for command in queue.commands() {
-        remapper.patch(command);
+    info!("Loading source images");
+    let loader = scripting::call_initialize(&lua)?;
+    for (key, filename) in loader.entries() {
+        let source = image::open(&filename)?;
+        remapper.insert_source(&key, source);
+        info!("Loaded '{}' as '{}'", filename, key);
     }
 
-    remapper.base_image().save(arguments.output)?;
+    info!("Executing remapper script");
+    let queue = scripting::call_run(&lua)?;
 
+    info!("Remapping image");
+    for command in queue.commands() {
+        remapper.patch(command)?;
+    }
+
+    info!("Saving as '{}'", arguments.output);
+    remapper.base_image().save(arguments.output)?;
     Ok(())
 }
